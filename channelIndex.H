@@ -57,9 +57,6 @@ class channelIndex
 
         static const NamedEnum<vector::components, 3> vectorComponentsNames_;
 
-        //- Is mesh symmetric
-        const bool symmetric_;
-
         //- direction to sort
         // Note: direction is an unsigned char, values [0,255]
         const direction dir_;
@@ -111,7 +108,6 @@ public:
         (
             const polyMesh& mesh,
             const labelList& startFaces,
-            const bool symmetric,
             const direction dir
         );
 
@@ -128,8 +124,7 @@ public:
             template<class T>
             Field<T> collapse
             (
-                const Field<T>& vsf,
-                const bool asymmetric=false
+                const Field<T>& vsf
             ) const;
 
             //- return the field of Y locations from the cell centres

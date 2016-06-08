@@ -174,7 +174,7 @@ void Foam::channelIndex::calcLayeredRegions
         blockedFace
     );
 
-	// Print out the blockedFaces for debugging puproses
+    // Print out the blockedFaces for debugging puproses
     if (false)
     {
         OFstream str(mesh.time().path()/"blockedFaces.obj");
@@ -217,20 +217,15 @@ void Foam::channelIndex::calcLayeredRegions
       / regionCount_
     );
 
-	// Sort the cell-centers after dir_
-	// Note: gets sorted on construction
+    // Sort the cell-centers after dir_
+    // Note: gets sorted on construction
     SortableList<scalar> sortComponent(regionCc.component(dir_));
 
-	//Save the original indices
+    //Save the original indices
     sortMap_ = sortComponent.indices();
 
-	// So y_ is a list of cell-centers sorted after dir_
+    // So y_ is a list of cell-centers sorted after dir_
     y_ = sortComponent;
-
-    if (symmetric_)
-    {
-        y_.setSize(cellRegion_().nRegions()/2);
-    }
 }
 
 
@@ -242,18 +237,17 @@ Foam::channelIndex::channelIndex
     const dictionary& dict
 )
 :
-    symmetric_(readBool(dict.lookup("symmetric"))),
     dir_(vectorComponentsNames_.read(dict.lookup("component")))
 {
-	//all the patches defined on the mesh
+    //all the patches defined on the mesh
     const polyBoundaryMesh& patches = mesh.boundaryMesh();
 
-	//patches to seed from
+    //patches to seed from
     const wordList patchNames(dict.lookup("patches"));
 
     label nFaces = 0;
 
-	//calculate total amount of face on the patches in patchNames
+    //calculate total amount of face on the patches in patchNames
     forAll(patchNames, i)
     {
         const label patchI = patches.findPatchID(patchNames[i]);
@@ -269,7 +263,7 @@ Foam::channelIndex::channelIndex
         nFaces += patches[patchI].size();
     }
 
-	//will hold the ids of the faces of the seed-patches
+    //will hold the ids of the faces of the seed-patches
     labelList startFaces(nFaces);
     nFaces = 0;
 
@@ -277,7 +271,7 @@ Foam::channelIndex::channelIndex
     {
         const polyPatch& pp = patches[patchNames[i]];
 
-		//loop through the faces of the patch and store their id
+        //loop through the faces of the patch and store their id
         forAll(pp, j)
         {
             startFaces[nFaces++] = pp.start()+j;
@@ -293,11 +287,9 @@ Foam::channelIndex::channelIndex
 (
     const polyMesh& mesh,
     const labelList& startFaces,
-    const bool symmetric,
     const direction dir
 )
 :
-    symmetric_(symmetric),
     dir_(dir)
 {
     // Calculate regions.

@@ -40,7 +40,33 @@ Description
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+//
 
+template<class FieldType, class ReturnType>
+ReturnType patchAverage
+(
+    const fvMesh& mesh,
+    const IOobject& fieldHeader,
+    const scalar area,
+    const label patchI
+)
+{
+    FieldType field(fieldHeader, mesh);
+
+    typename FieldType::value_type sumField =
+        pTraits<typename FieldType::value_type>::zero;
+
+    if (area > 0)
+    {
+        sumField = gSum
+        (
+            mesh.magSf().boundaryField()[patchI]
+            * field.boundaryField()[patchI]
+        ) / area;
+    }
+        
+    return sumField;
+}
 int main(int argc, char *argv[])
 {
     argList::noParallel();
@@ -72,12 +98,22 @@ int main(int argc, char *argv[])
     );
     channelIndex channelIndexing(mesh, channelDict);
 
-	wordList fieldNames
-	(
-		channelDict.lookup("fields")
-	);
+    wordList fieldNames
+    (
+        channelDict.lookup("fields")
+    );
 
+    word botPatchName(channelDict.lookup("botPatch"));
+    word topPatchName(channelDict.lookup("topPatch"));
 
+    const label patchBot = mesh.boundaryMesh().findPatchID(botPatchName);
+    const label patchTop = mesh.boundaryMesh().findPatchID(topPatchName);
+
+    scalar areaBot = gSum(mesh.magSf().boundaryField()[patchBot]);
+    scalar areaTop = gSum(mesh.magSf().boundaryField()[patchTop]);
+
+    scalar yBot = mesh.boundaryMesh()[patchBot].faceCentres()[0].y();
+    scalar yTop = mesh.boundaryMesh()[patchTop].faceCentres()[0].y();
 
     // For each time step read all fields
     forAll(timeDirs, timeI)

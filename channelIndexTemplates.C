@@ -30,10 +30,10 @@ License
 template<class T>
 Foam::Field<T> Foam::channelIndex::regionSum(const Field<T>& cellField) const
 {
-	// create a field of the same type as T, initialized to 0
-	// and of size equal to the amount of regions the mesh is 
-	// split into.
-	// So in practice the size is the amount of cells along dir_
+    // create a field of the same type as T, initialized to 0
+    // and of size equal to the amount of regions the mesh is 
+    // split into.
+    // So in practice the size is the amount of cells along dir_
     Field<T> regionField(cellRegion_().nRegions(), pTraits<T>::zero);
 
 
@@ -53,8 +53,7 @@ Foam::Field<T> Foam::channelIndex::regionSum(const Field<T>& cellField) const
 template<class T>
 Foam::Field<T> Foam::channelIndex::collapse
 (
-    const Field<T>& cellField,
-    const bool asymmetric
+    const Field<T>& cellField
 ) const
 {
     // Average and order
@@ -66,39 +65,6 @@ Foam::Field<T> Foam::channelIndex::collapse
       / regionCount_,
         sortMap_
     );
-
-    // Symmetry?
-    if (symmetric_)
-    {
-        label nlb2 = cellRegion_().nRegions()/2;
-
-        if (asymmetric)
-        {
-            for (label j=0; j<nlb2; j++)
-            {
-                regionField[j] =
-                    0.5
-                  * (
-                        regionField[j]
-                      - regionField[cellRegion_().nRegions() - j - 1]
-                    );
-            }
-        }
-        else
-        {
-            for (label j=0; j<nlb2; j++)
-            {
-                regionField[j] =
-                    0.5
-                  * (
-                        regionField[j]
-                      + regionField[cellRegion_().nRegions() - j - 1]
-                    );
-            }
-        }
-
-        regionField.setSize(nlb2);
-    }
 
     return regionField;
 }
