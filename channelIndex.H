@@ -76,6 +76,12 @@ class channelIndex
         //- Sorted component of cell centres
         scalarField y_;
 
+        //- Start patch index
+        label startPatchIndex_;
+
+        //- Opposite patch index
+        label oppositePatchIndex_;
+
 
 
     // Private Member Functions
@@ -90,7 +96,7 @@ class channelIndex
         void calcLayeredRegions
         (
             const polyMesh& mesh,
-            const labelList& startFaces
+            const boolList& blockedFace
         );
 
         //- No copy construct
@@ -137,6 +143,16 @@ public:
             const scalarField& y() const
             {
                 return y_;
+            }
+
+            label startPatchIndex() const
+            {
+                return startPatchIndex_;
+            }
+
+            label oppositePatchIndex() const
+            {
+                return oppositePatchIndex_;
             }
 
 };

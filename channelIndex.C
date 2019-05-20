@@ -152,16 +152,9 @@ void Foam::channelIndex::walkOppositeFaces
 void Foam::channelIndex::calcLayeredRegions
 (
     const polyMesh& mesh,
-    const labelList& startFaces
+    const boolList& blockedFace
 )
 {
-    boolList blockedFace(mesh.nFaces(), false);
-    walkOppositeFaces
-    (
-        mesh,
-        startFaces,
-        blockedFace
-    );
 
 
     if (false)
@@ -238,6 +231,9 @@ Foam::channelIndex::channelIndex
     {
         const label patchi = patches.findPatchID(patchNames[i]);
 
+        //Assume only one patch for now..
+        startPatchIndex_ = patchi;
+
         if (patchi == -1)
         {
             FatalErrorInFunction
@@ -262,8 +258,36 @@ Foam::channelIndex::channelIndex
         }
     }
 
+    boolList blockedFace(mesh.nFaces(), false);
+    walkOppositeFaces
+    (
+        mesh,
+        startFaces,
+        blockedFace
+    );
+
+    const polyBoundaryMesh & bMesh = mesh.boundaryMesh();
+
+    for (label i=0; i<bMesh.nFaces(); i++)
+    {
+        label faceI = mesh.nInternalFaces() + i;
+
+        if (blockedFace[faceI])
+        {
+            label patchI = bMesh.whichPatch(faceI);
+            if (patchI != startPatchIndex_)
+            {
+                oppositePatchIndex_ = patchI; 
+                Info<< "The opposite patch is "
+                    << bMesh.names()[patchI] << nl;
+                break;
+            }
+
+        }
+    }
+
     // Calculate regions.
-    calcLayeredRegions(mesh, startFaces);
+    calcLayeredRegions(mesh, blockedFace);
 }
 
 
@@ -278,8 +302,36 @@ Foam::channelIndex::channelIndex
     symmetric_(symmetric),
     dir_(dir)
 {
+    boolList blockedFace(mesh.nFaces(), false);
+    walkOppositeFaces
+    (
+        mesh,
+        startFaces,
+        blockedFace
+    );
+
+    const polyBoundaryMesh & bMesh = mesh.boundaryMesh();
+
+    startPatchIndex_ = bMesh.whichPatch(startFaces[0]);
+
+    for (label i=0; i<bMesh.nFaces(); i++)
+    {
+        label faceI = mesh.nInternalFaces() + i;
+
+        if (blockedFace[faceI])
+        {
+            label patchI = bMesh.whichPatch(faceI);
+            if (patchI != startPatchIndex_)
+            {
+                oppositePatchIndex_ = patchI; 
+                Info<< "The opposite patch is "
+                    << bMesh.names()[patchI] << nl;
+                break;
+            }
+        }
+    }
     // Calculate regions.
-    calcLayeredRegions(mesh, startFaces);
+    calcLayeredRegions(mesh, blockedFace);
 }
 
 

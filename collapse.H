@@ -25,7 +25,6 @@
 
         if (fieldHeader.typeHeaderOk<volScalarField>(true, true, false))
         {
-            Info << "kek" << nl;
             mkDir(path);
             volScalarField field
             (

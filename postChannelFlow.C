@@ -103,11 +103,8 @@ int main(int argc, char *argv[])
         channelDict.lookup("fields")
     );
 
-    word botPatchName(channelDict.lookup("botPatch"));
-    word topPatchName(channelDict.lookup("topPatch"));
-
-    const label patchBot = mesh.boundaryMesh().findPatchID(botPatchName);
-    const label patchTop = mesh.boundaryMesh().findPatchID(topPatchName);
+    const label patchBot = channelIndexing.startPatchIndex();
+    const label patchTop = channelIndexing.oppositePatchIndex();
 
     scalar areaBot = gSum(mesh.magSf().boundaryField()[patchBot]);
     scalar areaTop = gSum(mesh.magSf().boundaryField()[patchTop]);
