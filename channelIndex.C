@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2011 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2011-2016 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -33,23 +33,16 @@ License
 
 // * * * * * * * * * * * * * Static Member Data  * * * * * * * * * * * * * * //
 
-namespace Foam
-{
-    template<>
-    const char* Foam::NamedEnum
-    <
-        Foam::vector::components,
-        3
-    >::names[] =
-    {
-        "x",
-        "y",
-        "z"
-    };
-}
-
-const Foam::NamedEnum<Foam::vector::components, 3>
-    Foam::channelIndex::vectorComponentsNames_;
+const Foam::Enum
+<
+    Foam::vector::components
+>
+Foam::channelIndex::vectorComponentsNames_
+({
+    { vector::components::X, "x" },
+    { vector::components::Y, "y" },
+    { vector::components::Z, "z" },
+});
 
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
@@ -64,17 +57,13 @@ void Foam::channelIndex::walkOppositeFaces
 {
     const cellList& cells = mesh.cells();
     const faceList& faces = mesh.faces();
-
-    //number of boundary faces 
-    label nBnd = mesh.nFaces() - mesh.nInternalFaces();
-
-    Info << "Number of boundary faces: " << nBnd << endl;
+    const label nBnd = mesh.nBoundaryFaces();
 
     DynamicList<label> frontFaces(startFaces);
     forAll(frontFaces, i)
     {
-        label faceI = frontFaces[i];
-        blockedFace[faceI] = true;
+        label facei = frontFaces[i];
+        blockedFace[facei] = true;
     }
 
     while (returnReduce(frontFaces.size(), sumOp<label>()) > 0)
@@ -83,11 +72,11 @@ void Foam::channelIndex::walkOppositeFaces
         boolList isFrontBndFace(nBnd, false);
         forAll(frontFaces, i)
         {
-            label faceI = frontFaces[i];
+            label facei = frontFaces[i];
 
-            if (!mesh.isInternalFace(faceI))
+            if (!mesh.isInternalFace(facei))
             {
-                isFrontBndFace[faceI-mesh.nInternalFaces()] = true;
+                isFrontBndFace[facei-mesh.nInternalFaces()] = true;
             }
         }
         syncTools::swapBoundaryFaceList(mesh, isFrontBndFace);
@@ -95,11 +84,11 @@ void Foam::channelIndex::walkOppositeFaces
         // Add
         forAll(isFrontBndFace, i)
         {
-            label faceI = mesh.nInternalFaces()+i;
-            if (isFrontBndFace[i] && !blockedFace[faceI])
+            label facei = mesh.nInternalFaces()+i;
+            if (isFrontBndFace[i] && !blockedFace[facei])
             {
-                blockedFace[faceI] = true;
-                frontFaces.append(faceI);
+                blockedFace[facei] = true;
+                frontFaces.append(facei);
             }
         }
 
@@ -108,47 +97,47 @@ void Foam::channelIndex::walkOppositeFaces
 
         forAll(frontFaces, i)
         {
-            label faceI = frontFaces[i];
+            label facei = frontFaces[i];
 
             {
-                const cell& ownCell = cells[mesh.faceOwner()[faceI]];
+                const cell& ownCell = cells[mesh.faceOwner()[facei]];
 
-                label oppositeFaceI = ownCell.opposingFaceLabel(faceI, faces);
+                label oppositeFacei = ownCell.opposingFaceLabel(facei, faces);
 
-                if (oppositeFaceI == -1)
+                if (oppositeFacei == -1)
                 {
-                    FatalErrorIn("channelIndex::walkOppositeFaces(..)")
-                        << "Face:" << faceI << " owner cell:" << ownCell
+                    FatalErrorInFunction
+                        << "Face:" << facei << " owner cell:" << ownCell
                         << " is not a hex?" << abort(FatalError);
                 }
                 else
                 {
-                    if (!blockedFace[oppositeFaceI])
+                    if (!blockedFace[oppositeFacei])
                     {
-                        blockedFace[oppositeFaceI] = true;
-                        newFrontFaces.append(oppositeFaceI);
+                        blockedFace[oppositeFacei] = true;
+                        newFrontFaces.append(oppositeFacei);
                     }
                 }
             }
 
-            if (mesh.isInternalFace(faceI))
+            if (mesh.isInternalFace(facei))
             {
-                const cell& neiCell = mesh.cells()[mesh.faceNeighbour()[faceI]];
+                const cell& neiCell = mesh.cells()[mesh.faceNeighbour()[facei]];
 
-                label oppositeFaceI = neiCell.opposingFaceLabel(faceI, faces);
+                label oppositeFacei = neiCell.opposingFaceLabel(facei, faces);
 
-                if (oppositeFaceI == -1)
+                if (oppositeFacei == -1)
                 {
-                    FatalErrorIn("channelIndex::walkOppositeFaces(..)")
-                        << "Face:" << faceI << " neighbour cell:" << neiCell
+                    FatalErrorInFunction
+                        << "Face:" << facei << " neighbour cell:" << neiCell
                         << " is not a hex?" << abort(FatalError);
                 }
                 else
                 {
-                    if (!blockedFace[oppositeFaceI])
+                    if (!blockedFace[oppositeFacei])
                     {
-                        blockedFace[oppositeFaceI] = true;
-                        newFrontFaces.append(oppositeFaceI);
+                        blockedFace[oppositeFacei] = true;
+                        newFrontFaces.append(oppositeFacei);
                     }
                 }
             }
@@ -174,16 +163,16 @@ void Foam::channelIndex::calcLayeredRegions
         blockedFace
     );
 
-    // Print out the blockedFaces for debugging puproses
+
     if (false)
     {
         OFstream str(mesh.time().path()/"blockedFaces.obj");
         label vertI = 0;
-        forAll(blockedFace, faceI)
+        forAll(blockedFace, facei)
         {
-            if (blockedFace[faceI])
+            if (blockedFace[facei])
             {
-                const face& f = mesh.faces()[faceI];
+                const face& f = mesh.faces()[facei];
                 forAll(f, fp)
                 {
                     meshTools::writeOBJ(str, mesh.points()[f[fp]]);
@@ -200,32 +189,31 @@ void Foam::channelIndex::calcLayeredRegions
     }
 
 
-    // regionSplit splits the mesh into regions.
-    // Each region should be a slice of the mesh with the same value along dir_
+    // Do analysis for connected regions
     cellRegion_.reset(new regionSplit(mesh, blockedFace));
 
     Info<< "Detected " << cellRegion_().nRegions() << " layers." << nl << endl;
 
-    // Number of cells per region
+    // Sum number of entries per region
     regionCount_ = regionSum(scalarField(mesh.nCells(), 1.0));
 
     // Average cell centres to determine ordering.
-    // Note: pointField = vectorField
     pointField regionCc
     (
         regionSum(mesh.cellCentres())
       / regionCount_
     );
 
-    // Sort the cell-centers after dir_
-    // Note: gets sorted on construction
     SortableList<scalar> sortComponent(regionCc.component(dir_));
 
-    //Save the original indices
     sortMap_ = sortComponent.indices();
 
-    // So y_ is a list of cell-centers sorted after dir_
     y_ = sortComponent;
+
+    if (symmetric_)
+    {
+        y_.setSize(cellRegion_().nRegions()/2);
+    }
 }
 
 
@@ -237,33 +225,30 @@ Foam::channelIndex::channelIndex
     const dictionary& dict
 )
 :
-    dir_(vectorComponentsNames_.read(dict.lookup("component")))
+    symmetric_(dict.get<bool>("symmetric")),
+    dir_(vectorComponentsNames_.get("component", dict))
 {
-    //all the patches defined on the mesh
     const polyBoundaryMesh& patches = mesh.boundaryMesh();
 
-    //patches to seed from
-    const wordList patchNames(dict.lookup("patches"));
+    const wordList patchNames(dict.get<wordList>("patches"));
 
     label nFaces = 0;
 
-    //calculate total amount of face on the patches in patchNames
     forAll(patchNames, i)
     {
-        const label patchI = patches.findPatchID(patchNames[i]);
+        const label patchi = patches.findPatchID(patchNames[i]);
 
-        if (patchI == -1)
+        if (patchi == -1)
         {
-            FatalErrorIn("channelIndex::channelIndex(const polyMesh&)")
+            FatalErrorInFunction
                 << "Illegal patch " << patchNames[i]
                 << ". Valid patches are " << patches.name()
                 << exit(FatalError);
         }
 
-        nFaces += patches[patchI].size();
+        nFaces += patches[patchi].size();
     }
 
-    //will hold the ids of the faces of the seed-patches
     labelList startFaces(nFaces);
     nFaces = 0;
 
@@ -271,7 +256,6 @@ Foam::channelIndex::channelIndex
     {
         const polyPatch& pp = patches[patchNames[i]];
 
-        //loop through the faces of the patch and store their id
         forAll(pp, j)
         {
             startFaces[nFaces++] = pp.start()+j;
@@ -287,9 +271,11 @@ Foam::channelIndex::channelIndex
 (
     const polyMesh& mesh,
     const labelList& startFaces,
+    const bool symmetric,
     const direction dir
 )
 :
+    symmetric_(symmetric),
     dir_(dir)
 {
     // Calculate regions.

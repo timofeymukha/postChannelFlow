@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2011 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2011-2015 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -55,10 +55,12 @@ class channelIndex
 
     // Private data
 
-        static const NamedEnum<vector::components, 3> vectorComponentsNames_;
+        static const Enum<vector::components> vectorComponentsNames_;
 
-        //- direction to sort
-        // Note: direction is an unsigned char, values [0,255]
+        //- Is mesh symmetric
+        const bool symmetric_;
+
+        //- Direction to sort
         const direction dir_;
 
         //- Per cell the global region
@@ -91,9 +93,11 @@ class channelIndex
             const labelList& startFaces
         );
 
-        //- Disallow default bitwise copy construct and assignment
-        channelIndex(const channelIndex&);
-        void operator=(const channelIndex&);
+        //- No copy construct
+        channelIndex(const channelIndex&) = delete;
+
+        //- No copy assignment
+        void operator=(const channelIndex&) = delete;
 
 
 public:
@@ -108,6 +112,7 @@ public:
         (
             const polyMesh& mesh,
             const labelList& startFaces,
+            const bool symmetric,
             const direction dir
         );
 
@@ -120,14 +125,15 @@ public:
             template<class T>
             Field<T> regionSum(const Field<T>& cellField) const;
 
-            //- collapse a field to a line
+            //- Collapse a field to a line
             template<class T>
             Field<T> collapse
             (
-                const Field<T>& vsf
+                const Field<T>& vsf,
+                const bool asymmetric=false
             ) const;
 
-            //- return the field of Y locations from the cell centres
+            //- Return the field of Y locations from the cell centres
             const scalarField& y() const
             {
                 return y_;
@@ -143,7 +149,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-#   include "channelIndexTemplates.C"
+    #include "channelIndexTemplates.C"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

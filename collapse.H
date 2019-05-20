@@ -20,22 +20,13 @@
             IOobject::MUST_READ
         );
 
-        //Check if the field was found, if not, warn and do nothing
-        if (!fieldHeader.headerOk())
-        {
-            Info<< "    No " << fieldNames[i] << " field" << endl;
-            continue;
-        }
-
-        //set the path
+        // Write path
         fileName path(fieldHeader.rootPath()/fieldHeader.caseName()/"postProcessing"/"collapsedFields"/fieldHeader.instance());
-    mkDir(path);
 
-        //Check the type of the field
-        word type = fieldHeader.headerClassName();
-
-        if ( type == "volScalarField" )
+        if (fieldHeader.typeHeaderOk<volScalarField>(true, true, false))
         {
+            Info << "kek" << nl;
+            mkDir(path);
             volScalarField field
             (
                 fieldHeader,
@@ -59,22 +50,36 @@
 
             makeGraph(allY, allValues, fieldNames[i], path, gFormat);
         }
-        else if ( type == "volVectorField" )
+        else if (fieldHeader.typeHeaderOk<volVectorField>(true, true, false))
         {
+            mkDir(path);
             volVectorField field
             (
                 fieldHeader,
                 mesh
             );
 
-            scalarField valuesX = channelIndexing.collapse(field.component(vector::X)());
-            scalarField valuesY = channelIndexing.collapse(field.component(vector::Y)());
-            scalarField valuesZ = channelIndexing.collapse(field.component(vector::Z)());
+            scalarField valuesX =
+                channelIndexing.collapse(field.component(vector::X)());
+            scalarField valuesY =
+                channelIndexing.collapse(field.component(vector::Y)());
+            scalarField valuesZ =
+                channelIndexing.collapse(field.component(vector::Z)());
 
-            vector valBot = patchAverage<volVectorField, vector>(mesh, fieldHeader,
-                                                         areaBot, patchBot);
-            vector valTop = patchAverage<volVectorField, vector>(mesh, fieldHeader,
-                                                         areaTop, patchTop);
+            vector valBot = patchAverage<volVectorField, vector>
+            (
+                mesh,
+                fieldHeader,
+                areaBot,
+                patchBot
+            );
+            vector valTop = patchAverage<volVectorField, vector>
+            (
+                mesh,
+                fieldHeader,
+                areaTop,
+                patchTop
+            );
             scalarField allValuesX(valuesX.size()+2);
             scalarField allValuesY(valuesY.size()+2);
             scalarField allValuesZ(valuesZ.size()+2);
@@ -97,25 +102,42 @@
             makeGraph(allY, allValuesY, fieldNames[i]+"_Y", path, gFormat);
             makeGraph(allY, allValuesZ, fieldNames[i]+"_Z", path, gFormat);
         }
-        else if ( type == "volSymmTensorField" )
+        else if (fieldHeader.typeHeaderOk<volSymmTensorField>(true, true, false))
         {
+            mkDir(path);
             volSymmTensorField field
             (
                 fieldHeader,
                 mesh
             );
 
-            scalarField valuesXX = channelIndexing.collapse(field.component(symmTensor::XX)());
-            scalarField valuesXY = channelIndexing.collapse(field.component(symmTensor::XY)());
-            scalarField valuesXZ = channelIndexing.collapse(field.component(symmTensor::XZ)());
-            scalarField valuesYY = channelIndexing.collapse(field.component(symmTensor::YY)());
-            scalarField valuesYZ = channelIndexing.collapse(field.component(symmTensor::YZ)());
-            scalarField valuesZZ = channelIndexing.collapse(field.component(symmTensor::ZZ)());
+            scalarField valuesXX =
+                channelIndexing.collapse(field.component(symmTensor::XX)());
+            scalarField valuesXY =
+                channelIndexing.collapse(field.component(symmTensor::XY)());
+            scalarField valuesXZ =
+                channelIndexing.collapse(field.component(symmTensor::XZ)());
+            scalarField valuesYY =
+                channelIndexing.collapse(field.component(symmTensor::YY)());
+            scalarField valuesYZ =
+                channelIndexing.collapse(field.component(symmTensor::YZ)());
+            scalarField valuesZZ =
+                channelIndexing.collapse(field.component(symmTensor::ZZ)());
 
-            symmTensor valBot = patchAverage<volSymmTensorField, symmTensor>(mesh, fieldHeader,
-                                                         areaBot, patchBot);
-            symmTensor valTop = patchAverage<volSymmTensorField, symmTensor>(mesh, fieldHeader,
-                                                         areaTop, patchTop);
+            symmTensor valBot = patchAverage<volSymmTensorField, symmTensor>
+            (
+                mesh,
+                fieldHeader,
+                areaBot,
+                patchBot
+            );
+            symmTensor valTop = patchAverage<volSymmTensorField, symmTensor>
+            (
+                mesh,
+                fieldHeader,
+                areaTop,
+                patchTop
+            );
 
             scalarField allValuesXX(valuesXX.size()+2);
             scalarField allValuesXY(valuesXY.size()+2);
@@ -157,7 +179,9 @@
         }
         else
         {
-            Info << "    Unsupported field type, ignoring field " << fieldNames[i];
+            Info<< "    Field " << fieldNames[i]
+                << " not found or its type is unsupported "
+                << nl;
         }
 
     }
