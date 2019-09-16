@@ -63,37 +63,37 @@ Foam::Field<T> Foam::channelIndex::collapse
     );
 
     // Symmetry?
-    if (symmetric_)
-    {
-        label nlb2 = cellRegion_().nRegions()/2;
+    //if (symmetric_)
+    //{
+        //label nlb2 = cellRegion_().nRegions()/2;
 
-        if (asymmetric)
-        {
-            for (label j=0; j<nlb2; j++)
-            {
-                regionField[j] =
-                    0.5
-                  * (
-                        regionField[j]
-                      - regionField[cellRegion_().nRegions() - j - 1]
-                    );
-            }
-        }
-        else
-        {
-            for (label j=0; j<nlb2; j++)
-            {
-                regionField[j] =
-                    0.5
-                  * (
-                        regionField[j]
-                      + regionField[cellRegion_().nRegions() - j - 1]
-                    );
-            }
-        }
+        //if (asymmetric)
+        //{
+            //for (label j=0; j<nlb2; j++)
+            //{
+                //regionField[j] =
+                    //0.5
+                  //* (
+                        //regionField[j]
+                      //- regionField[cellRegion_().nRegions() - j - 1]
+                    //);
+            //}
+        //}
+        //else
+        //{
+            //for (label j=0; j<nlb2; j++)
+            //{
+                //regionField[j] =
+                    //0.5
+                  //* (
+                        //regionField[j]
+                      //+ regionField[cellRegion_().nRegions() - j - 1]
+                    //);
+            //}
+        //}
 
-        regionField.setSize(nlb2);
-    }
+        //regionField.setSize(nlb2);
+    //}
 
     return regionField;
 }

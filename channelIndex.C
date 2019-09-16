@@ -203,10 +203,10 @@ void Foam::channelIndex::calcLayeredRegions
 
     y_ = sortComponent;
 
-    if (symmetric_)
-    {
-        y_.setSize(cellRegion_().nRegions()/2);
-    }
+    //if (symmetric_)
+    //{
+        //y_.setSize(cellRegion_().nRegions()/2);
+    //}
 }
 
 

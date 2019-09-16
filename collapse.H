@@ -1,4 +1,5 @@
-    //Get the corrdinates
+    //Get the coordinates
+
     const scalarField& y = channelIndexing.y();
     scalarField allY(y.size()+2);
 
@@ -9,34 +10,34 @@
     }
     allY[allY.size()-1] = yTop;
 
-    forAll(fieldNames, i)
+    IOobjectList fieldList
+    (
+        mesh,
+        runTime.timeName()
+    );
+
+    forAllConstIters(fieldList, fieldIter)
     {
-        //Create the IOobject for the field 
-        IOobject fieldHeader
-        (
-            fieldNames[i],
-            runTime.timeName(),
-            mesh,
-            IOobject::MUST_READ
-        );
+         const word fieldName = fieldIter()->name();
+         Info << fieldName << nl;
 
-        // Write path
-        fileName path(fieldHeader.rootPath()/fieldHeader.caseName()/"postProcessing"/"collapsedFields"/fieldHeader.instance());
 
-        if (fieldHeader.typeHeaderOk<volScalarField>(true, true, false))
+         fileName path(fieldIter()->rootPath()/fieldIter()->caseName()/"postProcessing"/"collapsedFields"/fieldIter()->instance());
+
+        if (fieldIter()->typeHeaderOk<volScalarField>(true, true, false))
         {
             mkDir(path);
             volScalarField field
             (
-                fieldHeader,
+                *fieldIter(),
                 mesh
             );
 
             scalarField values = channelIndexing.collapse(field);
 
-            scalar valBot = patchAverage<volScalarField, scalar>(mesh, fieldHeader,
+            scalar valBot = patchAverage<volScalarField, scalar>(mesh, field,
                                                          areaBot, patchBot);
-            scalar valTop = patchAverage<volScalarField, scalar>(mesh, fieldHeader,
+            scalar valTop = patchAverage<volScalarField, scalar>(mesh, field,
                                                          areaTop, patchTop);
             scalarField allValues(values.size()+2);
 
@@ -47,14 +48,14 @@
             }
             allValues[allValues.size()-1] = valTop;
 
-            makeGraph(allY, allValues, fieldNames[i], path, gFormat);
+            makeGraph(allY, allValues, fieldName, path, gFormat);
         }
-        else if (fieldHeader.typeHeaderOk<volVectorField>(true, true, false))
+        else if (fieldIter()->typeHeaderOk<volVectorField>(true, true, false))
         {
             mkDir(path);
             volVectorField field
             (
-                fieldHeader,
+                *fieldIter(),
                 mesh
             );
 
@@ -68,14 +69,14 @@
             vector valBot = patchAverage<volVectorField, vector>
             (
                 mesh,
-                fieldHeader,
+                field,
                 areaBot,
                 patchBot
             );
             vector valTop = patchAverage<volVectorField, vector>
             (
                 mesh,
-                fieldHeader,
+                field,
                 areaTop,
                 patchTop
             );
@@ -97,16 +98,16 @@
             allValuesY[allValuesY.size()-1] = valTop.y();
             allValuesZ[allValuesZ.size()-1] = valTop.z();
 
-            makeGraph(allY, allValuesX, fieldNames[i]+"_X", path, gFormat);
-            makeGraph(allY, allValuesY, fieldNames[i]+"_Y", path, gFormat);
-            makeGraph(allY, allValuesZ, fieldNames[i]+"_Z", path, gFormat);
+            makeGraph(allY, allValuesX, fieldName+"_X", path, gFormat);
+            makeGraph(allY, allValuesY, fieldName+"_Y", path, gFormat);
+            makeGraph(allY, allValuesZ, fieldName+"_Z", path, gFormat);
         }
-        else if (fieldHeader.typeHeaderOk<volSymmTensorField>(true, true, false))
+        else if (fieldIter()->typeHeaderOk<volSymmTensorField>(true, true, false))
         {
             mkDir(path);
             volSymmTensorField field
             (
-                fieldHeader,
+                *fieldIter(),
                 mesh
             );
 
@@ -126,14 +127,14 @@
             symmTensor valBot = patchAverage<volSymmTensorField, symmTensor>
             (
                 mesh,
-                fieldHeader,
+                field,
                 areaBot,
                 patchBot
             );
             symmTensor valTop = patchAverage<volSymmTensorField, symmTensor>
             (
                 mesh,
-                fieldHeader,
+                field,
                 areaTop,
                 patchTop
             );
@@ -169,18 +170,114 @@
             allValuesYZ[allValuesYZ.size()-1] = valTop.component(symmTensor::YZ);
             allValuesZZ[allValuesZZ.size()-1] = valTop.component(symmTensor::ZZ);
 
-            makeGraph(allY, allValuesXX, fieldNames[i]+"_XX", path, gFormat);
-            makeGraph(allY, allValuesYY, fieldNames[i]+"_YY", path, gFormat);
-            makeGraph(allY, allValuesZZ, fieldNames[i]+"_ZZ", path, gFormat);
-            makeGraph(allY, allValuesXY, fieldNames[i]+"_XY", path, gFormat);
-            makeGraph(allY, allValuesXZ, fieldNames[i]+"_XZ", path, gFormat);
-            makeGraph(allY, allValuesYZ, fieldNames[i]+"_YZ", path, gFormat);
+            makeGraph(allY, allValuesXX, fieldName+"_XX", path, gFormat);
+            makeGraph(allY, allValuesYY, fieldName+"_YY", path, gFormat);
+            makeGraph(allY, allValuesZZ, fieldName+"_ZZ", path, gFormat);
+            makeGraph(allY, allValuesXY, fieldName+"_XY", path, gFormat);
+            makeGraph(allY, allValuesXZ, fieldName+"_XZ", path, gFormat);
+            makeGraph(allY, allValuesYZ, fieldName+"_YZ", path, gFormat);
+        }
+        else if (fieldIter()->typeHeaderOk<volTensorField>(true, true, false))
+        {
+            mkDir(path);
+
+            volTensorField field
+            (
+                *fieldIter(),
+                mesh
+            );
+
+            scalarField valuesXX =
+                channelIndexing.collapse(field.component(tensor::XX)());
+            scalarField valuesXY =
+                channelIndexing.collapse(field.component(tensor::XY)());
+            scalarField valuesXZ =
+                channelIndexing.collapse(field.component(tensor::XZ)());
+            scalarField valuesYX =
+                channelIndexing.collapse(field.component(tensor::YX)());
+            scalarField valuesYY =
+                channelIndexing.collapse(field.component(tensor::YY)());
+            scalarField valuesYZ =
+                channelIndexing.collapse(field.component(tensor::YZ)());
+            scalarField valuesZX =
+                channelIndexing.collapse(field.component(tensor::ZX)());
+            scalarField valuesZY =
+                channelIndexing.collapse(field.component(tensor::ZY)());
+            scalarField valuesZZ =
+                channelIndexing.collapse(field.component(tensor::ZZ)());
+
+            tensor valBot = patchAverage<volTensorField, tensor>
+            (
+                mesh,
+                field,
+                areaBot,
+                patchBot
+            );
+            tensor valTop = patchAverage<volTensorField, tensor>
+            (
+                mesh,
+                field,
+                areaTop,
+                patchTop
+            );
+
+            scalarField allValuesXX(valuesXX.size()+2);
+            scalarField allValuesXY(valuesXY.size()+2);
+            scalarField allValuesXZ(valuesXZ.size()+2);
+            scalarField allValuesYX(valuesYX.size()+2);
+            scalarField allValuesYY(valuesYY.size()+2);
+            scalarField allValuesYZ(valuesYZ.size()+2);
+            scalarField allValuesZX(valuesZX.size()+2);
+            scalarField allValuesZY(valuesZY.size()+2);
+            scalarField allValuesZZ(valuesZZ.size()+2);
+
+            allValuesXX[0] = valBot.component(tensor::XX);
+            allValuesXY[0] = valBot.component(tensor::XY);
+            allValuesXZ[0] = valBot.component(tensor::XZ);
+            allValuesYX[0] = valBot.component(tensor::YX);
+            allValuesYY[0] = valBot.component(tensor::YY);
+            allValuesYZ[0] = valBot.component(tensor::YZ);
+            allValuesZX[0] = valBot.component(tensor::ZX);
+            allValuesZY[0] = valBot.component(tensor::ZY);
+            allValuesZZ[0] = valBot.component(tensor::ZZ);
+
+            forAll(valuesXX, valI)
+            {
+                allValuesXX[valI+1] = valuesXX[valI];
+                allValuesXY[valI+1] = valuesXY[valI];
+                allValuesXZ[valI+1] = valuesXZ[valI];
+                allValuesYX[valI+1] = valuesYX[valI];
+                allValuesYY[valI+1] = valuesYY[valI];
+                allValuesYZ[valI+1] = valuesYZ[valI];
+                allValuesZX[valI+1] = valuesZX[valI];
+                allValuesZY[valI+1] = valuesZY[valI];
+                allValuesZZ[valI+1] = valuesZZ[valI];
+            }
+
+            allValuesXX[allValuesXX.size()-1] = valTop.component(tensor::XX);
+            allValuesXY[allValuesXY.size()-1] = valTop.component(tensor::XY);
+            allValuesXZ[allValuesXZ.size()-1] = valTop.component(tensor::XZ);
+            allValuesYY[allValuesYX.size()-1] = valTop.component(tensor::YX);
+            allValuesYY[allValuesYY.size()-1] = valTop.component(tensor::YY);
+            allValuesYZ[allValuesYZ.size()-1] = valTop.component(tensor::YZ);
+            allValuesZZ[allValuesZX.size()-1] = valTop.component(tensor::ZX);
+            allValuesZZ[allValuesZY.size()-1] = valTop.component(tensor::ZY);
+            allValuesZZ[allValuesZZ.size()-1] = valTop.component(tensor::ZZ);
+
+            makeGraph(allY, allValuesXX, fieldName+"_XX", path, gFormat);
+            makeGraph(allY, allValuesXY, fieldName+"_XY", path, gFormat);
+            makeGraph(allY, allValuesXZ, fieldName+"_XZ", path, gFormat);
+            makeGraph(allY, allValuesYX, fieldName+"_YX", path, gFormat);
+            makeGraph(allY, allValuesYY, fieldName+"_YY", path, gFormat);
+            makeGraph(allY, allValuesYZ, fieldName+"_YZ", path, gFormat);
+            makeGraph(allY, allValuesZX, fieldName+"_ZX", path, gFormat);
+            makeGraph(allY, allValuesZY, fieldName+"_ZY", path, gFormat);
+            makeGraph(allY, allValuesZZ, fieldName+"_ZZ", path, gFormat);
         }
         else
         {
-            Info<< "    Field " << fieldNames[i]
+            Info<< "    Field " << fieldIter()->name() 
                 << " not found or its type is unsupported "
                 << nl;
         }
-
     }

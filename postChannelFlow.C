@@ -37,6 +37,7 @@ Description
 #include "makeGraph.H"
 
 #include "OSspecific.H"
+#include "IOobjectList.H"
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -67,6 +68,8 @@ ReturnType patchAverage
         
     return sumField;
 }
+
+
 int main(int argc, char *argv[])
 {
     argList::noParallel();
@@ -97,11 +100,6 @@ int main(int argc, char *argv[])
         )
     );
     channelIndex channelIndexing(mesh, channelDict);
-
-    wordList fieldNames
-    (
-        channelDict.lookup("fields")
-    );
 
     const label patchBot = channelIndexing.startPatchIndex();
     const label patchTop = channelIndexing.oppositePatchIndex();
