@@ -35,10 +35,12 @@
 
             scalarField values = channelIndexing.collapse(field);
 
+
+            // TODO handle multiple patches
             scalar valBot = patchAverage<volScalarField, scalar>(mesh, field,
-                                                         areaBot, patchBot);
+                                                         areaBot, patchBot[0]);
             scalar valTop = patchAverage<volScalarField, scalar>(mesh, field,
-                                                         areaTop, patchTop);
+                                                         areaTop, patchTop[0]);
             scalarField allValues(values.size()+2);
 
             allValues[0] = valBot;
@@ -71,14 +73,14 @@
                 mesh,
                 field,
                 areaBot,
-                patchBot
+                patchBot[0]
             );
             vector valTop = patchAverage<volVectorField, vector>
             (
                 mesh,
                 field,
                 areaTop,
-                patchTop
+                patchTop[0]
             );
             scalarField allValuesX(valuesX.size()+2);
             scalarField allValuesY(valuesY.size()+2);
@@ -129,14 +131,14 @@
                 mesh,
                 field,
                 areaBot,
-                patchBot
+                patchBot[0]
             );
             symmTensor valTop = patchAverage<volSymmTensorField, symmTensor>
             (
                 mesh,
                 field,
                 areaTop,
-                patchTop
+                patchTop[0]
             );
 
             scalarField allValuesXX(valuesXX.size()+2);
@@ -211,14 +213,14 @@
                 mesh,
                 field,
                 areaBot,
-                patchBot
+                patchBot[0]
             );
             tensor valTop = patchAverage<volTensorField, tensor>
             (
                 mesh,
                 field,
                 areaTop,
-                patchTop
+                patchTop[0]
             );
 
             scalarField allValuesXX(valuesXX.size()+2);

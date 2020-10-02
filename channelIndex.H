@@ -3,7 +3,7 @@
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
     \\  /    A nd           | Copyright (C) 2011-2015 OpenFOAM Foundation
-     \\/     M anipulation  |
+     \\/     M anipulation  |                    2020 Timofey Mukha
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -58,7 +58,7 @@ class channelIndex
         static const Enum<vector::components> vectorComponentsNames_;
 
         //- Is mesh symmetric
-        const bool symmetric_;
+        //const bool symmetric_;
 
         //- Direction to sort
         const direction dir_;
@@ -77,10 +77,10 @@ class channelIndex
         scalarField y_;
 
         //- Start patch index
-        label startPatchIndex_;
+        labelList bottomPatchIndices_;
 
         //- Opposite patch index
-        label oppositePatchIndex_;
+        labelList topPatchIndices_;
 
 
 
@@ -118,12 +118,39 @@ public:
         (
             const polyMesh& mesh,
             const labelList& startFaces,
-            const bool symmetric,
+            //const bool symmetric,
             const direction dir
         );
 
 
     // Member Functions
+
+        //- Find the indices of the seed patches
+        void findBottomPatchIndices
+        (
+            const polyMesh& mesh,
+            const wordList& patchNames
+        );
+
+        void findBottomPatchIndices
+        (
+            const polyMesh& mesh,
+            const labelList& startFaces
+        );
+
+        //- Find the indices of the patches opposite the seed patches
+        void findTopPatchIndices
+        (
+            const polyMesh& mesh,
+            const boolList& blockedFace
+        );
+
+        //- Check that the bottom and top patches have the same number
+        //  of faces in total
+        void checkPatchSizes
+        (
+            const polyBoundaryMesh& bMesh
+        );
 
         // Access
 
@@ -135,8 +162,8 @@ public:
             template<class T>
             Field<T> collapse
             (
-                const Field<T>& vsf,
-                const bool asymmetric=false
+                const Field<T>& vsf
+            //    const bool asymmetric=false
             ) const;
 
             //- Return the field of Y locations from the cell centres
@@ -145,14 +172,14 @@ public:
                 return y_;
             }
 
-            label startPatchIndex() const
+            labelList bottomPatchIndices() const
             {
-                return startPatchIndex_;
+                return bottomPatchIndices_;
             }
 
-            label oppositePatchIndex() const
+            labelList topPatchIndices() const
             {
-                return oppositePatchIndex_;
+                return topPatchIndices_;
             }
 
 };

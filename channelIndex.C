@@ -210,6 +210,118 @@ void Foam::channelIndex::calcLayeredRegions
 }
 
 
+void Foam::channelIndex::findBottomPatchIndices
+(
+    const polyMesh& mesh,
+    const wordList& patchNames
+)
+{
+    const polyBoundaryMesh& bMesh = mesh.boundaryMesh();
+
+    for (word i : patchNames)
+    {
+        const label patchI = bMesh.findPatchID(i);
+
+        if (patchI == -1)
+        {
+            FatalErrorInFunction
+                << "Illegal patch " << i
+                << ". Valid patches are " << bMesh.name()
+                << exit(FatalError);
+        }
+
+        bottomPatchIndices_.append(patchI);
+    }
+}
+
+void Foam::channelIndex::findBottomPatchIndices
+(
+    const polyMesh& mesh,
+    const labelList& startFaces
+)
+{
+    const polyBoundaryMesh& bMesh = mesh.boundaryMesh();
+
+    for (label i : startFaces)
+    {
+        const label patchI = bMesh.whichPatch(i);
+
+        if (!bottomPatchIndices_.found(patchI))
+        {
+            bottomPatchIndices_.append(patchI);
+        }
+        
+    }
+}
+
+
+void Foam::channelIndex::findTopPatchIndices
+(
+    const polyMesh& mesh,
+    const boolList& blockedFace
+)
+{
+    const polyBoundaryMesh & bMesh = mesh.boundaryMesh();
+
+    for (label i=0; i<bMesh.nFaces(); i++)
+    {
+        label faceI = mesh.nInternalFaces() + i;
+
+        if (blockedFace[faceI])
+        {
+            label patchI = bMesh.whichPatch(faceI);
+            if ((!bottomPatchIndices_.found(patchI)) && 
+                (!topPatchIndices_.found(patchI)))
+            {
+                topPatchIndices_.append(patchI); 
+            }
+
+        }
+    }
+
+    if (topPatchIndices_.size() == 0)
+    {
+        FatalErrorInFunction
+            << "Could not find the top patch(es)."
+            << exit(FatalError);
+    }
+
+    Info<< "The top patches are: ";
+    wordList patchNames = bMesh.names();
+    for (label i : topPatchIndices_)
+    {
+        Info<< patchNames[i] << " ";
+    }
+}
+
+void Foam::channelIndex::checkPatchSizes
+(
+    const polyBoundaryMesh& bMesh
+)
+{
+    label nBottom = 0;
+    label nTop = 0;
+
+    for (label i : bottomPatchIndices_)
+    {
+        nBottom += bMesh[i].size();
+    }
+    for (label i : topPatchIndices_)
+    {
+        nTop += bMesh[i].size();
+    }
+    
+    if (nBottom != nTop)
+    {
+        FatalErrorInFunction
+            << "The total number of faces on the bottom and top patches are"
+            << "unequal. Bottom faces: "<< nBottom << " Top faces: "
+            << nTop << "."
+            << exit(FatalError);
+    }
+
+}
+
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 Foam::channelIndex::channelIndex
@@ -218,31 +330,21 @@ Foam::channelIndex::channelIndex
     const dictionary& dict
 )
 :
-    symmetric_(dict.get<bool>("symmetric")),
+    //symmetric_(dict.get<bool>("symmetric")),
     dir_(vectorComponentsNames_.get("component", dict))
 {
-    const polyBoundaryMesh& patches = mesh.boundaryMesh();
-
+    const polyBoundaryMesh& bMesh = mesh.boundaryMesh();
     const wordList patchNames(dict.get<wordList>("patches"));
 
+    // Get the seed patch indices from the patch names
+    findBottomPatchIndices(mesh, patchNames);
+
+    // Sum the number of faces on the seed patches
     label nFaces = 0;
 
     forAll(patchNames, i)
     {
-        const label patchi = patches.findPatchID(patchNames[i]);
-
-        //Assume only one patch for now..
-        startPatchIndex_ = patchi;
-
-        if (patchi == -1)
-        {
-            FatalErrorInFunction
-                << "Illegal patch " << patchNames[i]
-                << ". Valid patches are " << patches.name()
-                << exit(FatalError);
-        }
-
-        nFaces += patches[patchi].size();
+        nFaces += bMesh[bottomPatchIndices_[i]].size();
     }
 
     labelList startFaces(nFaces);
@@ -250,7 +352,7 @@ Foam::channelIndex::channelIndex
 
     forAll(patchNames, i)
     {
-        const polyPatch& pp = patches[patchNames[i]];
+        const polyPatch& pp = bMesh[patchNames[i]];
 
         forAll(pp, j)
         {
@@ -266,25 +368,11 @@ Foam::channelIndex::channelIndex
         blockedFace
     );
 
-    const polyBoundaryMesh & bMesh = mesh.boundaryMesh();
 
-    for (label i=0; i<bMesh.nFaces(); i++)
-    {
-        label faceI = mesh.nInternalFaces() + i;
+    // Find 
+    findTopPatchIndices(mesh, blockedFace);
 
-        if (blockedFace[faceI])
-        {
-            label patchI = bMesh.whichPatch(faceI);
-            if (patchI != startPatchIndex_)
-            {
-                oppositePatchIndex_ = patchI; 
-                Info<< "The opposite patch is "
-                    << bMesh.names()[patchI] << nl;
-                break;
-            }
-
-        }
-    }
+    checkPatchSizes(bMesh);
 
     // Calculate regions.
     calcLayeredRegions(mesh, blockedFace);
@@ -295,11 +383,11 @@ Foam::channelIndex::channelIndex
 (
     const polyMesh& mesh,
     const labelList& startFaces,
-    const bool symmetric,
+    //const bool symmetric,
     const direction dir
 )
 :
-    symmetric_(symmetric),
+    //symmetric_(symmetric),
     dir_(dir)
 {
     boolList blockedFace(mesh.nFaces(), false);
@@ -309,27 +397,13 @@ Foam::channelIndex::channelIndex
         startFaces,
         blockedFace
     );
+    
 
-    const polyBoundaryMesh & bMesh = mesh.boundaryMesh();
+    findBottomPatchIndices(mesh, startFaces);
+    findTopPatchIndices(mesh, blockedFace);
 
-    startPatchIndex_ = bMesh.whichPatch(startFaces[0]);
-
-    for (label i=0; i<bMesh.nFaces(); i++)
-    {
-        label faceI = mesh.nInternalFaces() + i;
-
-        if (blockedFace[faceI])
-        {
-            label patchI = bMesh.whichPatch(faceI);
-            if (patchI != startPatchIndex_)
-            {
-                oppositePatchIndex_ = patchI; 
-                Info<< "The opposite patch is "
-                    << bMesh.names()[patchI] << nl;
-                break;
-            }
-        }
-    }
+    checkPatchSizes(mesh.boundaryMesh());
+    
     // Calculate regions.
     calcLayeredRegions(mesh, blockedFace);
 }

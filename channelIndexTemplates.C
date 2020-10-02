@@ -48,8 +48,8 @@ Foam::Field<T> Foam::channelIndex::regionSum(const Field<T>& cellField) const
 template<class T>
 Foam::Field<T> Foam::channelIndex::collapse
 (
-    const Field<T>& cellField,
-    const bool asymmetric
+    const Field<T>& cellField
+//    const bool asymmetric
 ) const
 {
     // Average and order

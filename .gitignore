@@ -4,3 +4,4 @@ lnInclude/
 Make/*
 !/Make/files
 !/Make/options
+.vscode

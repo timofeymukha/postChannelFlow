@@ -71,7 +71,12 @@ ReturnType patchAverage
 
 
 int main(int argc, char *argv[])
-{
+{ 
+    argList::addNote
+    (
+        "Post-process data from channel flow calculations"
+    );
+
     argList::noParallel();
     timeSelector::addOptions();
 
@@ -81,7 +86,7 @@ int main(int argc, char *argv[])
     // Get times list
     instantList timeDirs = timeSelector::select0(runTime, args);
 
-#   include "createMesh.H"
+#   include "createNamedMesh.H"
 #   include "readTransportProperties.H"
 
     const word& gFormat = runTime.graphFormat();
@@ -101,14 +106,16 @@ int main(int argc, char *argv[])
     );
     channelIndex channelIndexing(mesh, channelDict);
 
-    const label patchBot = channelIndexing.startPatchIndex();
-    const label patchTop = channelIndexing.oppositePatchIndex();
+    const labelList patchBot = channelIndexing.bottomPatchIndices();
+    const labelList patchTop = channelIndexing.topPatchIndices();
 
-    scalar areaBot = gSum(mesh.magSf().boundaryField()[patchBot]);
-    scalar areaTop = gSum(mesh.magSf().boundaryField()[patchTop]);
+    scalar areaBot = gSum(mesh.magSf().boundaryField()[patchBot[0]]);
+    scalar areaTop = gSum(mesh.magSf().boundaryField()[patchTop[0]]);
 
-    scalar yBot = mesh.boundaryMesh()[patchBot].faceCentres()[0].y();
-    scalar yTop = mesh.boundaryMesh()[patchTop].faceCentres()[0].y();
+    // We assume all faces on the patches have same y
+    // TODO: use direction, not necessarily y
+    scalar yBot = mesh.boundaryMesh()[patchBot[0]].faceCentres()[0].y();
+    scalar yTop = mesh.boundaryMesh()[patchTop[0]].faceCentres()[0].y();
 
     // For each time step read all fields
     forAll(timeDirs, timeI)
