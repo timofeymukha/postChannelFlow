@@ -3,8 +3,10 @@
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
     \\  /    A nd           | Copyright (C) 2011 OpenFOAM Foundation
-     \\/     M anipulation  |
-------------------------------------------------------------------------------- License This file is part of OpenFOAM.
+     \\/     M anipulation  |               2020 Timofey Mukha
+-------------------------------------------------------------------------------
+License
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -25,10 +27,8 @@ Application
 Description
     Post-processes data from channel flow calculations.
 
-    For each time: calculate: txx, txy,tyy, txy,
-    eps, prod, vorticity, enstrophy and helicity. Assuming that the mesh
-    is periodic in the x and z directions, collapse Umeanx, Umeany, txx,
-    txy and tyy to a line and print them as standard output.
+    Assuming that the mesh is periodic in the x and z directions, collapse
+    fields to a line and print them to postProcesing/collapsedFields.
 
 \*---------------------------------------------------------------------------*/
 
@@ -41,37 +41,137 @@ Description
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-//
 
-template<class FieldType, class ReturnType>
-ReturnType patchAverage
-(
-    const fvMesh& mesh,
-    const IOobject& fieldHeader,
-    const scalar area,
-    const label patchI
-)
+template<class T>
+Foam::wordList comptNames()
 {
-    FieldType field(fieldHeader, mesh);
-
-    typename FieldType::value_type sumField =
-        pTraits<typename FieldType::value_type>::zero;
-
-    if (area > 0)
-    {
-        sumField = gSum
-        (
-            mesh.magSf().boundaryField()[patchI]
-            * field.boundaryField()[patchI]
-        ) / area;
-    }
-        
-    return sumField;
+    return wordList();
 }
 
 
+template<>
+Foam::wordList comptNames<vector>()
+{
+    return {"_X", "_Y", "_Z"};
+}
+
+
+template<>
+Foam::wordList comptNames<symmTensor>()
+{
+    return {"_XX", "_XY", "_XZ", "_YY", "_YZ", "_ZZ"};
+}
+
+
+template<>
+Foam::wordList comptNames<tensor>()
+{
+    return {"_XX", "_XY", "_XZ", "_YX", "_YY", "_YZ", "_ZX", "_ZY", "_ZZ"};
+}
+
+template<>
+Foam::wordList comptNames<sphericalTensor>()
+{
+    return {"_II"};
+}
+
+
+template<class T>
+void writeToFile
+(
+    const scalarField& y,
+    const Field<T>& values,
+    const word name,
+    const fileName path,
+    const word format,
+    const wordList comptNames)
+{
+    for (label i=0; i<comptNames.size(); ++i)
+    {
+        makeGraph(y, values.component(i), name+comptNames[i], path, format);
+    }
+}
+
+template<>
+void writeToFile
+(
+    const scalarField& y,
+    const Field<scalar>& values,
+    const word name,
+    const fileName path,
+    const word format,
+    const wordList comptNames)
+{
+    makeGraph(y, values, name, path, format);
+}
+
+using HashType = Foam::HashTable
+<
+    Foam::IOobject*,
+    Foam::word,
+    Foam::string::hash
+>::const_iterator;
+
+template<class T>
+void collapse
+(
+    HashType & fieldIter,
+    const fvMesh & mesh,
+    const channelIndex & channelIndexing,
+    const word format
+)
+{
+    using FieldType=GeometricField<T, fvPatchField, volMesh>;
+
+    if (fieldIter()->typeHeaderOk<FieldType>(true, true, false))
+    {
+        const word fieldName = fieldIter()->name();
+        Info<<"    " << fieldName << endl;
+
+        fileName path
+        (
+            fieldIter()->rootPath()/fieldIter()->caseName()/
+            "postProcessing"/"collapsedFields"/fieldIter()->instance()
+        );
+
+        mkDir(path);
+        FieldType field
+        (
+            *fieldIter(),
+            mesh
+        );
+
+        Pair<T> boundaryValues =
+            channelIndexing.collapseBoundary<T>
+            (
+                mesh.boundaryMesh(),
+                field.boundaryField()
+            );
+
+        Field<T> internalValues =
+            channelIndexing.collapse(field);
+
+        Field<T> allValues(internalValues.size() + 2);
+        allValues[0] = boundaryValues[0];
+        allValues[allValues.size()-1] = boundaryValues[1];
+
+        for (label i=0; i<internalValues.size(); ++i)
+        {
+            allValues[i+1] = internalValues[i];
+        }
+
+        tmp<scalarField> y = channelIndexing.y(mesh.boundaryMesh());
+
+        const wordList cNames = comptNames<T>();
+        writeToFile<T>(y, allValues, fieldName, path, format, cNames);
+    }
+}
+
+
+
+
 int main(int argc, char *argv[])
-{ 
+{
     argList::addNote
     (
         "Post-process data from channel flow calculations"
@@ -104,27 +204,30 @@ int main(int argc, char *argv[])
             IOobject::NO_WRITE
         )
     );
-    channelIndex channelIndexing(mesh, channelDict);
+    channelIndex channelInd(mesh, channelDict);
 
-    const labelList patchBot = channelIndexing.bottomPatchIndices();
-    const labelList patchTop = channelIndexing.topPatchIndices();
-
-    scalar areaBot = gSum(mesh.magSf().boundaryField()[patchBot[0]]);
-    scalar areaTop = gSum(mesh.magSf().boundaryField()[patchTop[0]]);
-
-    // We assume all faces on the patches have same y
-    // TODO: use direction, not necessarily y
-    scalar yBot = mesh.boundaryMesh()[patchBot[0]].faceCentres()[0].y();
-    scalar yTop = mesh.boundaryMesh()[patchTop[0]].faceCentres()[0].y();
-
-    // For each time step read all fields
     forAll(timeDirs, timeI)
     {
         runTime.setTime(timeDirs[timeI], timeI);
         Info<< "Collapsing fields for time " << runTime.timeName() << endl;
 
-        // Average fields over channel down to a line
-#       include "collapse.H"
+        IOobjectList fieldList
+        (
+            mesh,
+            runTime.timeName()
+        );
+
+        forAllConstIters(fieldList, fieldIter)
+        {
+            const word fieldName = fieldIter()->name();
+
+            collapse<scalar>(fieldIter, mesh, channelInd, gFormat);
+            collapse<vector>(fieldIter, mesh, channelInd, gFormat);
+            collapse<sphericalTensor>(fieldIter, mesh, channelInd, gFormat);
+            collapse<symmTensor>(fieldIter, mesh, channelInd, gFormat);
+            collapse<tensor>(fieldIter, mesh, channelInd, gFormat);
+
+        }
     }
 
     Info<< "\nEnd\n" << endl;
