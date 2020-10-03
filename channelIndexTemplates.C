@@ -126,8 +126,7 @@ Foam::Pair<T> Foam::channelIndex::collapseBoundary
         result[i] = areaWeightedValues/totalArea;
     }
 
-    Info << result <<nl;
-
+    //Info << result <<nl;
 
     return result;
 }
