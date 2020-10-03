@@ -3,7 +3,7 @@
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
     \\  /    A nd           | Copyright (C) 2011-2016 OpenFOAM Foundation
-     \\/     M anipulation  |
+     \\/     M anipulation  |                    2020 Timofey Mukha
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -103,7 +103,7 @@ Foam::Pair<T> Foam::channelIndex::collapseBoundary
 (
     const polyBoundaryMesh& bMesh,
     const typename GeometricField<T, fvPatchField, volMesh>::Boundary & boundaryField    
-)
+) const
 {
 
     // A pair of values, corresponding to bottom and top patches
