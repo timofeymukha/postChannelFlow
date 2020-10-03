@@ -98,5 +98,38 @@ Foam::Field<T> Foam::channelIndex::collapse
     return regionField;
 }
 
+template<class T>
+Foam::Pair<T> Foam::channelIndex::collapseBoundary
+(
+    const polyBoundaryMesh& bMesh,
+    const typename GeometricField<T, fvPatchField, volMesh>::Boundary & boundaryField    
+)
+{
+
+    // A pair of values, corresponding to bottom and top patches
+    Pair<T> result(pTraits<T>::zero, pTraits<T>::zero);
+    
+    Pair<labelList> patchIndices(bottomPatchIndices_, topPatchIndices_);
+
+    for (label i=0; i<2; ++i)
+    {
+        scalar totalArea = 0;
+        T areaWeightedValues = pTraits<T>::zero;
+
+        for (label pI : patchIndices[i])
+        {
+            scalarField magSf = mag(bMesh[pI].faceAreas());
+            areaWeightedValues += gSum(magSf*boundaryField[pI]);
+            totalArea += gSum(magSf);
+        }
+        
+        result[i] = areaWeightedValues/totalArea;
+    }
+
+    Info << result <<nl;
+
+
+    return result;
+}
 
 // ************************************************************************* //

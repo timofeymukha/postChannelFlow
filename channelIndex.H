@@ -39,6 +39,10 @@ SourceFiles
 #include "direction.H"
 #include "scalarField.H"
 #include "polyMesh.H"
+#include "GeometricField.H"
+#include "volMesh.H"
+#include "fvPatchField.H"
+
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -152,19 +156,27 @@ public:
             const polyBoundaryMesh& bMesh
         );
 
+        //- Sum field per region
+        template<class T>
+        Field<T> regionSum(const Field<T>& cellField) const;
+
+        //- Collapse a field to a line
+        template<class T>
+        Field<T> collapse
+        (
+            const Field<T>& vsf
+        //    const bool asymmetric=false
+        ) const;
+
+        //- Collapse a field to a value on the bottom and top patches
+        template<class T>
+        Pair<T> collapseBoundary
+        (
+            const polyBoundaryMesh&,
+            const typename GeometricField<T, fvPatchField, volMesh>::Boundary&
+        );
+
         // Access
-
-            //- Sum field per region
-            template<class T>
-            Field<T> regionSum(const Field<T>& cellField) const;
-
-            //- Collapse a field to a line
-            template<class T>
-            Field<T> collapse
-            (
-                const Field<T>& vsf
-            //    const bool asymmetric=false
-            ) const;
 
             //- Return the field of Y locations from the cell centres
             const scalarField& y() const
