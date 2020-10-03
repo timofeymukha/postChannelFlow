@@ -78,7 +78,7 @@ class channelIndex
         labelList sortMap_;
 
         //- Sorted component of cell centres
-        scalarField y_;
+        scalarField yInternal_;
 
         //- Start patch index
         labelList bottomPatchIndices_;
@@ -174,15 +174,18 @@ public:
         (
             const polyBoundaryMesh&,
             const typename GeometricField<T, fvPatchField, volMesh>::Boundary&
-        );
+        ) const;
 
         // Access
 
-            //- Return the field of Y locations from the cell centres
-            const scalarField& y() const
+            //- Return the field of y locations from the cell centres
+            const scalarField& yInternal() const
             {
-                return y_;
+                return yInternal_;
             }
+
+            //- Return the field of y locations, including boundaries
+            tmp<scalarField> y(const polyBoundaryMesh& bMesh) const;
 
             labelList bottomPatchIndices() const
             {

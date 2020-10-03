@@ -3,7 +3,7 @@
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
     \\  /    A nd           | Copyright (C) 2011-2016 OpenFOAM Foundation
-     \\/     M anipulation  |
+     \\/     M anipulation  |                    2020 Timofey Mukha
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -201,11 +201,11 @@ void Foam::channelIndex::calcLayeredRegions
 
     sortMap_ = sortComponent.indices();
 
-    y_ = sortComponent;
+    yInternal_ = sortComponent;
 
     //if (symmetric_)
     //{
-        //y_.setSize(cellRegion_().nRegions()/2);
+        //yInternal_.setSize(cellRegion_().nRegions()/2);
     //}
 }
 
@@ -321,6 +321,29 @@ void Foam::channelIndex::checkPatchSizes
     }
 
 }
+
+
+Foam::tmp<Foam::scalarField>
+Foam::channelIndex::y(const polyBoundaryMesh& bMesh) const
+{
+    auto ytmp=tmp<scalarField>::New(yInternal_.size() + 2);
+    scalarField & y = ytmp.ref();
+
+    for (label i=0; i<yInternal_.size(); ++i)
+    {
+        y[i+1] = yInternal_[i];
+    }
+
+    // We rely on all faces of the corresponding wall boundary to 
+    // have the same y value. Reasonable for channel flow.
+    vectorField fc = bMesh[bottomPatchIndices_[0]].faceCentres();
+    y[0] = fc[0].component(dir_);
+    fc = bMesh[topPatchIndices_[0]].faceCentres();
+    y[y.size()-1] = fc[0].component(dir_);
+
+    return ytmp;   
+}
+
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
