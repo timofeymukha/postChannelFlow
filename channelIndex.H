@@ -182,6 +182,11 @@ public:
                 return topPatchIndices_;
             }
 
+            direction dir() const
+            {
+                return dir_;
+            }
+
 };
 
 
