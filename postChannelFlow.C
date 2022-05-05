@@ -114,7 +114,7 @@ using HashType = Foam::HashTable
 <
     Foam::IOobject*,
     Foam::word,
-    Foam::string::hash
+    Foam::Hash<Foam::word, bool>
 >::const_iterator;
 
 template<class T>
