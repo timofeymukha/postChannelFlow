@@ -12,6 +12,8 @@ Some differences with the `postChannel`
 
 Works with OpenFOAM v2212, with the ambition to always support the latest version from OpenCFD.
 
+![Cirrus CI - Task and Script Build Status](https://img.shields.io/cirrus/github/timofeymukha/postChannelFlow)
+
 **This offering is not approved or endorsed by OpenCFD Limited, producer
 and distributor of the OpenFOAM software and owner of the OPENFOAM®  and
 OpenCFD®  trade marks.**
