@@ -51,7 +51,6 @@ template<class T>
 Foam::Field<T> Foam::channelIndex::collapse
 (
     const Field<T>& cellField
-//    const bool asymmetric
 ) const
 {
     // Average and order
@@ -63,39 +62,6 @@ Foam::Field<T> Foam::channelIndex::collapse
       / regionCount_,
         sortMap_
     );
-
-    // Symmetry?
-    //if (symmetric_)
-    //{
-        //label nlb2 = cellRegion_().nRegions()/2;
-
-        //if (asymmetric)
-        //{
-            //for (label j=0; j<nlb2; j++)
-            //{
-                //regionField[j] =
-                    //0.5
-                  //* (
-                        //regionField[j]
-                      //- regionField[cellRegion_().nRegions() - j - 1]
-                    //);
-            //}
-        //}
-        //else
-        //{
-            //for (label j=0; j<nlb2; j++)
-            //{
-                //regionField[j] =
-                    //0.5
-                  //* (
-                        //regionField[j]
-                      //+ regionField[cellRegion_().nRegions() - j - 1]
-                    //);
-            //}
-        //}
-
-        //regionField.setSize(nlb2);
-    //}
 
     return regionField;
 }
@@ -127,8 +93,6 @@ Foam::Pair<T> Foam::channelIndex::collapseBoundary
         
         result[i] = areaWeightedValues/totalArea;
     }
-
-    //Info << result <<nl;
 
     return result;
 }

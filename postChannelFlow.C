@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2011-2015 OpenFOAM Foundation, 2020 Timofey Mukha	
+    Copyright (C) 2011-2015 OpenFOAM Foundation, 2020-2023 Timofey Mukha
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -31,6 +31,8 @@ Group
 
 Description
     Post-processes data from channel flow calculations.
+    Will collapse all fields in the chosen time directory.
+    Does *not* collapse to a half-profile exploiting (anti)symmetry.
 
     Assuming that the mesh is periodic in the x and z directions, collapse
     fields to a line and print them to postProcesing/collapsedFields.
@@ -114,7 +116,7 @@ using HashType = Foam::HashTable
 <
     Foam::IOobject*,
     Foam::word,
-    Foam::Hash<Foam::word, bool>
+    Foam::Hash<Foam::word>
 >::const_iterator;
 
 template<class T>

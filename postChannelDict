@@ -19,5 +19,3 @@ patches ( bottomWall );
 
 // Direction in which the layers are
 component y;
-
-fields  ( UMean UPrime2Mean );

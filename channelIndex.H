@@ -124,7 +124,6 @@ public:
         (
             const polyMesh& mesh,
             const labelList& startFaces,
-            //const bool symmetric,
             const direction dir
         );
 
