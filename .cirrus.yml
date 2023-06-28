@@ -1,0 +1,7 @@
+latest_task:
+  container:
+    image: opencfd/openfoam-dev:latest
+    cpu: 1
+    memory: 2G
+  test_script:
+    - /usr/bin/openfoam wmake
